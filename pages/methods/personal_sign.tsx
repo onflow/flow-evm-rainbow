@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useSignMessage, useAccount } from 'wagmi'
 import { verifyMessage, getBytecode } from '@wagmi/core'
 import { config } from '@/component/config'
 import { MethodPage } from '@/components/method-page'
-import { RPC_METHODS } from '@/lib/rpc-methods'
+import { PLACEHOLDER_ADDRESS, RPC_METHODS } from '@/lib/rpc-methods'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,9 +17,95 @@ export default function PersonalSignPage() {
   const [isSmartContract, setIsSmartContract] = useState<boolean | null>(null)
   const [isValidSignature, setIsValidSignature] = useState<boolean | null>(null)
   const [lastSignature, setLastSignature] = useState<string | null>(null)
-  
+  const [selectedTestIndex, setSelectedTestIndex] = useState<number | null>(null)
+  const [methodPageKey, setMethodPageKey] = useState(0)
+  const [testResults, setTestResults] = useState<Record<string, {
+    status: 'idle' | 'running' | 'passed' | 'failed'
+    message?: string
+  }>>({})
+
+  const messageTests = useMemo(() => method.tests ?? [], [method.tests])
+
   const { address } = useAccount()
   const { signMessageAsync } = useSignMessage()
+
+  const resolveTestParams = (params: any[]): any[] => {
+    return params.map((param) => {
+      if (typeof param === 'string' && param === PLACEHOLDER_ADDRESS && address) {
+        return address
+      }
+      return param
+    })
+  }
+
+  const handleLoadTestMessage = (index: number) => {
+    const test = messageTests[index]
+    if (!test) return
+
+    const paramsArray = Array.isArray(test.params) ? test.params : [test.params]
+    const hydrated = resolveTestParams(paramsArray)
+    const exampleMessage = hydrated[0]
+
+    if (typeof exampleMessage === 'string') {
+      setCustomMessage(exampleMessage)
+      setSelectedTestIndex(index)
+      setMethodPageKey(previous => previous + 1)
+    }
+  }
+
+  const copyTestParamsToClipboard = async (index: number) => {
+    const test = messageTests[index]
+    if (!test) return
+
+    const paramsArray = Array.isArray(test.params) ? test.params : [test.params]
+    const hydrated = resolveTestParams(paramsArray)
+    const json = JSON.stringify(hydrated, null, 2)
+
+    try {
+      await navigator.clipboard.writeText(json)
+    } catch (error) {
+      console.error('Failed to copy personal_sign test payload:', error)
+    }
+  }
+
+  const runMessageTest = async (index: number) => {
+    const test = messageTests[index]
+    if (!test) return
+
+    const paramsArray = Array.isArray(test.params) ? test.params : [test.params]
+    const hydrated = resolveTestParams(paramsArray)
+
+    setTestResults(prev => ({
+      ...prev,
+      [test.id]: { status: 'running' }
+    }))
+
+    try {
+      const result = await executePersonalSign(hydrated)
+      const verified = result?.verificationResult
+
+      if (verified === false) {
+        throw new Error('Signature verification failed.')
+      }
+
+      setTestResults(prev => ({
+        ...prev,
+        [test.id]: {
+          status: 'passed',
+          message: 'Signature verified successfully.'
+        }
+      }))
+    } catch (error: any) {
+      console.error(`personal_sign test ${test.id} failed:`, error)
+      setTestResults(prev => ({
+        ...prev,
+        [test.id]: {
+          status: 'failed',
+          message: error?.message ?? 'Unknown error'
+        }
+      }))
+    }
+  }
 
   // Check if connected account is a smart contract
   useEffect(() => {
@@ -55,6 +141,8 @@ export default function PersonalSignPage() {
       const signature = await signMessageAsync({ message })
       setLastSignature(signature)
 
+      let verificationResult: boolean | null = null
+
       // Verify the signature
       try {
         const isValid = await verifyMessage(config, {
@@ -63,16 +151,18 @@ export default function PersonalSignPage() {
           signature,
         })
         setIsValidSignature(isValid)
+        verificationResult = isValid
       } catch (verifyError) {
         console.warn('Signature verification failed:', verifyError)
         setIsValidSignature(false)
+        verificationResult = false
       }
 
       return {
         signature,
         message,
         address,
-        verificationResult: isValidSignature
+        verificationResult
       }
     } catch (error: any) {
       throw new Error(error.message || 'Failed to sign message')
@@ -91,11 +181,108 @@ export default function PersonalSignPage() {
   }
 
   return (
-    <MethodPage 
+    <MethodPage
+      key={methodPageKey}
       method={method}
       onExecute={executePersonalSign}
-      defaultParams={[customMessage]}
+      defaultParams={[customMessage, address ?? PLACEHOLDER_ADDRESS]}
     >
+      {messageTests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Test Messages</CardTitle>
+            <CardDescription>
+              Load predefined payloads or run automated message signing checks.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {messageTests.map((test, index) => {
+              const paramsArray = Array.isArray(test.params) ? test.params : [test.params]
+              const hydrated = resolveTestParams(paramsArray)
+              const messagePreview = typeof hydrated[0] === 'string' ? hydrated[0] : ''
+              const json = JSON.stringify(hydrated, null, 2)
+              const isSelected = selectedTestIndex === index
+              const result = testResults[test.id] ?? { status: 'idle' as const }
+              const status = result.status
+
+              let badgeVariant: 'default' | 'destructive' | 'secondary' | 'outline' = 'outline'
+              let badgeText = 'Not run'
+
+              if (status === 'running') {
+                badgeVariant = 'secondary'
+                badgeText = 'Running...'
+              } else if (status === 'passed') {
+                badgeVariant = 'default'
+                badgeText = 'Passed'
+              } else if (status === 'failed') {
+                badgeVariant = 'destructive'
+                badgeText = 'Failed'
+              }
+
+              return (
+                <div key={test.id} className="border border-muted rounded-lg p-3 space-y-2">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium">{test.label}</div>
+                        <Badge variant={badgeVariant} className="text-xs">
+                          {badgeText}
+                        </Badge>
+                      </div>
+                      {test.description && (
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {test.description}
+                        </p>
+                      )}
+                      {result.message && (
+                        <p className="text-xs text-muted-foreground">
+                          Last result: {result.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => runMessageTest(index)}
+                        disabled={!address || status === 'running'}
+                      >
+                        {status === 'running' ? 'Running...' : 'Run Test'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleLoadTestMessage(index)}
+                      >
+                        {isSelected ? 'Loaded' : 'Load'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyTestParamsToClipboard(index)}
+                      >
+                        Copy JSON
+                      </Button>
+                    </div>
+                  </div>
+                  {messagePreview && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Message</div>
+                      <div className="text-xs font-mono bg-muted p-2 rounded whitespace-pre-wrap break-words">
+                        {messagePreview}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-1">RPC Params</div>
+                    <pre className="bg-muted rounded-md p-2 text-xs font-mono overflow-x-auto">{json}</pre>
+                  </div>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Quick Actions</CardTitle>
@@ -109,7 +296,10 @@ export default function PersonalSignPage() {
             <Input
               id="custom-message"
               value={customMessage}
-              onChange={(e) => setCustomMessage(e.target.value)}
+              onChange={(e) => {
+                setCustomMessage(e.target.value)
+                setSelectedTestIndex(null)
+              }}
               placeholder="Enter message to sign..."
             />
           </div>

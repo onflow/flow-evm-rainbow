@@ -3,41 +3,13 @@ import '@rainbow-me/rainbowkit/styles.css';
 import type { AppProps } from 'next/app';
 import { config } from '../component/config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WagmiProvider, createConfig, http } from 'wagmi';
-import {
-  arbitrum,
-  base,
-  mainnet,
-  optimism,
-  polygon,
-  sepolia,
-  baseSepolia,
-  avalanche,
-} from 'wagmi/chains';
-import { getDefaultConfig, RainbowKitProvider, connectorsForWallets, darkTheme } from '@rainbow-me/rainbowkit';
+import { WagmiProvider } from 'wagmi';
+import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
+import { flowMainnet } from '@wagmi/core/chains'
 import {NextUIProvider} from "@nextui-org/react";
-// import { publicProvider } from "wagmi/providers/public";
-
-const flowPreviewnet = {
-  id: 646,
-  name: 'Flow Previewnet',
-  nativeCurrency: { name: 'Flow', symbol: 'FLOW', decimals: 18 },
-  rpcUrls: {
-    default: {
-      http: ['https://previewnet.evm.nodes.onflow.org'],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: 'FlowDiver',
-      url: 'https://previewnet.flowdiver.io',
-      apiUrl: 'https://previewnet.flowdiver.io/api',
-    },
-  },
-  contracts: {},
-}
 
 const client = new QueryClient();
+const DEFAULT_CHAIN_ID = Number(process.env.NEXT_PUBLIC_DEFAULT_CHAIN_ID ?? flowMainnet.id);
 
 if (typeof window !== "undefined") { 
   window.addEventListener("message", d => {
@@ -50,7 +22,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     <NextUIProvider>
       <WagmiProvider config={config}>
         <QueryClientProvider client={client}>
-          <RainbowKitProvider theme={darkTheme()}>
+          <RainbowKitProvider theme={darkTheme()} initialChain={DEFAULT_CHAIN_ID}>
             <main className="dark text-foreground bg-background min-h-screen">
               <Component {...pageProps} />
             </main>

@@ -91,10 +91,10 @@ const connectors = connectorsForWallets(
 export const config = createConfig({
   connectors: connectors,
   chains: [
-    mainnet, 
-    sepolia,
     flowMainnet, 
     flowTestnet, 
+    mainnet, 
+    sepolia,
     base, 
     baseSepolia, 
     arbitrum, 
@@ -120,18 +120,6 @@ export const config = createConfig({
 // Export supported chains for use in other components
 export const supportedChains = [
   {
-    id: mainnet.id,
-    name: mainnet.name,
-    nativeCurrency: mainnet.nativeCurrency,
-    testnet: false
-  },
-  {
-    id: sepolia.id,
-    name: sepolia.name,
-    nativeCurrency: sepolia.nativeCurrency,
-    testnet: true
-  },
-  {
     id: flowMainnet.id,
     name: 'Flow EVM Mainnet',
     nativeCurrency: flowMainnet.nativeCurrency,
@@ -141,6 +129,18 @@ export const supportedChains = [
     id: flowTestnet.id,
     name: 'Flow EVM Testnet',
     nativeCurrency: flowTestnet.nativeCurrency,
+    testnet: true
+  },
+  {
+    id: mainnet.id,
+    name: mainnet.name,
+    nativeCurrency: mainnet.nativeCurrency,
+    testnet: false
+  },
+  {
+    id: sepolia.id,
+    name: sepolia.name,
+    nativeCurrency: sepolia.nativeCurrency,
     testnet: true
   },
   {

@@ -8,7 +8,25 @@ export interface RPCMethod {
   walletTypes: ('EOA' | 'Smart Contract')[]
   metamaskDoc?: string
   exampleParams?: any[]
+  tests?: RPCMethodTest[]
 }
+
+export type RPCMethodTestMode =
+  | 'transaction:sign-legacy'
+  | 'transaction:sign-eip1559'
+  | 'transaction:send'
+  | 'signing:personal'
+  | 'signing:eth_sign'
+
+export interface RPCMethodTest {
+  id: string
+  label: string
+  description?: string
+  params: any[]
+  mode?: RPCMethodTestMode
+}
+
+export const PLACEHOLDER_ADDRESS = '0x9b2055d370f73ec7d8a03e965129118dc8f5bf83'
 
 export const RPC_METHODS: RPCMethod[] = [
   // Wallet Connection & Info
@@ -110,7 +128,41 @@ export const RPC_METHODS: RPCMethod[] = [
       "to": "0x742d35cc6634c0532925a3b8d50d4c0332b9d002",
       "value": "0x16345785d8a0000",
       "gas": "0x5208"
-    }]
+    }],
+    tests: [
+      {
+        id: 'legacy-eip155',
+        label: 'Legacy transfer (EIP-155)',
+        description: 'Basic legacy transaction using a fixed gas price (type 0).',
+        mode: 'transaction:sign-legacy',
+        params: [{
+          "from": PLACEHOLDER_ADDRESS,
+          "to": "0x742d35cc6634c0532925a3b8d50d4c0332b9d002",
+          "value": "0x2386f26fc10000",
+          "gas": "0x5208",
+          "gasPrice": "0x3b9aca00",
+          "nonce": "0x0",
+          "chainId": "0x2eb"
+        }]
+      },
+      {
+        id: 'dynamic-fee-eip1559',
+        label: 'Dynamic fee transfer (EIP-1559)',
+        description: 'Type-2 transaction with max fee and priority fee for dynamic gas pricing.',
+        mode: 'transaction:sign-eip1559',
+        params: [{
+          "from": PLACEHOLDER_ADDRESS,
+          "to": "0x742d35cc6634c0532925a3b8d50d4c0332b9d002",
+          "value": "0x2386f26fc10000",
+          "gas": "0x5208",
+          "maxPriorityFeePerGas": "0x59682f00",
+          "maxFeePerGas": "0x59682f00",
+          "nonce": "0x0",
+          "chainId": "0x2eb",
+          "type": "0x2"
+        }]
+      }
+    ]
   },
   {
     id: 'eth_estimateGas',
@@ -145,7 +197,26 @@ export const RPC_METHODS: RPCMethod[] = [
     category: 'deprecated',
     walletTypes: ['EOA', 'Smart Contract'],
     metamaskDoc: 'https://docs.metamask.io/wallet/reference/json-rpc-methods/eth_sign/',
-    exampleParams: ["0x9b2055d370f73ec7d8a03e965129118dc8f5bf83", "0x68656c6c6f20776f726c64"]
+    exampleParams: [PLACEHOLDER_ADDRESS, "0x68656c6c6f20776f726c64"],
+    tests: [
+      {
+        id: 'eth-sign-hex',
+        label: 'Hex-encoded hello world',
+        description: 'Demonstrates basic usage with raw hex data.',
+        mode: 'signing:eth_sign',
+        params: [PLACEHOLDER_ADDRESS, "0x68656c6c6f20776f726c64"]
+      },
+      {
+        id: 'eth-sign-json-hex',
+        label: 'Typed JSON encoded as hex',
+        description: 'Signs JSON payload that has been converted to UTF-8 hex.',
+        mode: 'signing:eth_sign',
+        params: [
+          PLACEHOLDER_ADDRESS,
+          "0x7b22617070223a2022466c6f772045564d20436c69656e74222c202274736d70223a2022323032342d30332d32355431323a30303a30305a227d"
+        ]
+      }
+    ]
   },
   {
     id: 'personal_sign',
@@ -155,7 +226,34 @@ export const RPC_METHODS: RPCMethod[] = [
     category: 'signing',
     walletTypes: ['EOA', 'Smart Contract'],
     metamaskDoc: 'https://docs.metamask.io/wallet/reference/json-rpc-methods/personal_sign/',
-    exampleParams: ["Hello, Flow EVM!", "0x9b2055d370f73ec7d8a03e965129118dc8f5bf83"]
+    exampleParams: ["Hello, Flow EVM!", PLACEHOLDER_ADDRESS],
+    tests: [
+      {
+        id: 'personal-sign-text',
+        label: 'Simple text message',
+        description: 'Plain UTF-8 string that wallets will display directly.',
+        mode: 'signing:personal',
+        params: ["Hello, Flow EVM!", PLACEHOLDER_ADDRESS]
+      },
+      {
+        id: 'personal-sign-json',
+        label: 'JSON payload message',
+        description: 'Example sign-in payload encoded as JSON.',
+        mode: 'signing:personal',
+        params: [JSON.stringify({
+          domain: "flow-evm.dev",
+          statement: "Sign in to Flow EVM tools",
+          issuedAt: "2024-03-25T12:00:00Z"
+        }, null, 2), PLACEHOLDER_ADDRESS]
+      },
+      {
+        id: 'personal-sign-hex',
+        label: 'Hex-encoded message',
+        description: 'Raw bytes supplied as a hex string (0x-prefixed).',
+        mode: 'signing:personal',
+        params: ["0x48656c6c6f2c20466c6f772045564d21", PLACEHOLDER_ADDRESS]
+      }
+    ]
   },
   {
     id: 'personal_ecRecover',
