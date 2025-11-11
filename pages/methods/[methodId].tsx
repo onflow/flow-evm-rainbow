@@ -247,7 +247,7 @@ export default function DynamicMethodPage() {
           { type: 'string', name: 'message', value: 'Hello Flow EVM!' }
         ]
 
-        let v1AddressParam = address
+        let v1AddressParam = address as `0x${string}`
         let typedDataV1 = rawTypedDataInput
 
         if (Array.isArray(rawTypedDataInput) && typeof rawTypedDataInput[0] === 'string' && rawTypedDataInput[0].startsWith('0x')) {
@@ -255,7 +255,7 @@ export default function DynamicMethodPage() {
             throw new Error('Typed data payload missing from custom params')
           }
 
-          v1AddressParam = rawTypedDataInput[0]
+          v1AddressParam = rawTypedDataInput[0] as `0x${string}`
           typedDataV1 = rawTypedDataInput[1]
         }
 
@@ -494,14 +494,14 @@ export default function DynamicMethodPage() {
         
         // If custom params provided, use them
         const parsedCustomData = JSON.parse(customParams)
-        let customAddressParam = address
+        let customAddressParam = address as `0x${string}`
         let typedDataPayload = parsedCustomData
 
         if (Array.isArray(parsedCustomData)) {
           const [maybeAddress, maybeTypedData] = parsedCustomData
 
           if (typeof maybeAddress === 'string') {
-            customAddressParam = maybeAddress
+            customAddressParam = maybeAddress as `0x${string}`
           }
 
           if (typeof maybeTypedData === 'undefined') {
