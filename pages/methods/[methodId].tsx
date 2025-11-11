@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
-import { useAccount, useSignMessage, useBalance, useChainId, useSendTransaction, usePublicClient } from 'wagmi'
+import { useAccount, useSignMessage, useBalance, useChainId, useSendTransaction, usePublicClient, useSignTypedData } from 'wagmi'
 import { getBytecode, verifyTypedData } from '@wagmi/core'
 import { config, supportedChains } from '@/component/config'
 import { MethodPage } from '@/components/method-page'
@@ -116,6 +116,7 @@ export default function DynamicMethodPage() {
 
   const { address } = useAccount()
   const { signMessageAsync } = useSignMessage()
+  const { signTypedDataAsync } = useSignTypedData()
   const publicClient = usePublicClient()
   const { sendTransactionAsync } = useSendTransaction()
   const { data: balance } = useBalance({ address })
@@ -246,7 +247,7 @@ export default function DynamicMethodPage() {
           { type: 'string', name: 'message', value: 'Hello Flow EVM!' }
         ]
 
-        let v1AddressParam = address.toLowerCase()
+        let v1AddressParam = address
         let typedDataV1 = rawTypedDataInput
 
         if (Array.isArray(rawTypedDataInput) && typeof rawTypedDataInput[0] === 'string' && rawTypedDataInput[0].startsWith('0x')) {
@@ -254,7 +255,7 @@ export default function DynamicMethodPage() {
             throw new Error('Typed data payload missing from custom params')
           }
 
-          v1AddressParam = rawTypedDataInput[0].toLowerCase()
+          v1AddressParam = rawTypedDataInput[0]
           typedDataV1 = rawTypedDataInput[1]
         }
 
@@ -385,6 +386,39 @@ export default function DynamicMethodPage() {
           throw new Error('No wallet connected')
         }
         
+        const requestTypedDataSignature = async (addressParam: string, payload: any) => {
+          const normalizedPayload = typeof payload === 'string'
+            ? JSON.parse(payload)
+            : payload
+
+          if (currentMethod === 'rainbowkit') {
+            if (!signTypedDataAsync) {
+              throw new Error('signTypedData hook unavailable')
+            }
+
+            const signature = await signTypedDataAsync({
+              account: addressParam as `0x${string}`,
+              domain: normalizedPayload.domain,
+              types: normalizedPayload.types,
+              primaryType: normalizedPayload.primaryType,
+              message: normalizedPayload.message
+            })
+
+            return { signature, normalizedPayload }
+          }
+
+          const payloadJson = typeof payload === 'string'
+            ? payload
+            : JSON.stringify(payload)
+
+          const signature = await ethereum.request({
+            method: method.method,
+            params: [addressParam, payloadJson]
+          })
+
+          return { signature, normalizedPayload }
+        }
+        
         // Use the EXACT working example structure - try to replicate the working call exactly
         if (!customParams) {
           console.log('Using exact working example structure')
@@ -430,26 +464,23 @@ export default function DynamicMethodPage() {
           const typedDataJson = JSON.stringify(typedData)
           console.log('Typed data JSON string:', typedDataJson)
 
-          const defaultSignature = await ethereum.request({
-            method: method.method,
-            params: [address.toLowerCase(), typedDataJson]
-          })
+          const { signature: defaultSignature, normalizedPayload } = await requestTypedDataSignature(address, typedData)
 
           // Store signature and typed data for verification
           setLastTypedDataSignature(defaultSignature)
-          setLastTypedDataInfo({ typedData, address })
+          setLastTypedDataInfo({ typedData: normalizedPayload, address })
 
           // Verify the signature
           try {
             const isValid = await verifyTypedData(config, {
               address: address as `0x${string}`,
               domain: {
-                ...typedData.domain,
-                verifyingContract: typedData.domain.verifyingContract as `0x${string}`
+                ...normalizedPayload.domain,
+                verifyingContract: normalizedPayload.domain.verifyingContract as `0x${string}`
               },
-              types: typedData.types,
-              primaryType: typedData.primaryType,
-              message: typedData.message,
+              types: normalizedPayload.types,
+              primaryType: normalizedPayload.primaryType,
+              message: normalizedPayload.message,
               signature: defaultSignature,
             })
             setIsValidTypedDataSignature(isValid)
@@ -463,14 +494,14 @@ export default function DynamicMethodPage() {
         
         // If custom params provided, use them
         const parsedCustomData = JSON.parse(customParams)
-        let customAddressParam = address.toLowerCase()
+        let customAddressParam = address
         let typedDataPayload = parsedCustomData
 
         if (Array.isArray(parsedCustomData)) {
           const [maybeAddress, maybeTypedData] = parsedCustomData
 
           if (typeof maybeAddress === 'string') {
-            customAddressParam = maybeAddress.toLowerCase()
+            customAddressParam = maybeAddress
           }
 
           if (typeof maybeTypedData === 'undefined') {
@@ -486,27 +517,24 @@ export default function DynamicMethodPage() {
 
         console.log('Using custom typed data JSON string:', customTypedDataJson)
 
-        const customSignature = await ethereum.request({
-          method: method.method,
-          params: [customAddressParam, customTypedDataJson]
-        })
+        const { signature: customSignature, normalizedPayload } = await requestTypedDataSignature(customAddressParam, typedDataPayload)
 
         // Store signature and typed data for verification
         setLastTypedDataSignature(customSignature)
-        setLastTypedDataInfo({ typedData: typedDataPayload, address: customAddressParam })
+        setLastTypedDataInfo({ typedData: normalizedPayload, address: customAddressParam })
 
         // Verify the signature if possible
         try {
-          if (typeof typedDataPayload === 'object' && typedDataPayload.domain && typedDataPayload.types) {
+          if (typeof normalizedPayload === 'object' && normalizedPayload.domain && normalizedPayload.types) {
             const isValid = await verifyTypedData(config, {
               address: customAddressParam as `0x${string}`,
               domain: {
-                ...typedDataPayload.domain,
-                verifyingContract: typedDataPayload.domain.verifyingContract as `0x${string}`
+                ...normalizedPayload.domain,
+                verifyingContract: normalizedPayload.domain.verifyingContract as `0x${string}`
               },
-              types: typedDataPayload.types,
-              primaryType: typedDataPayload.primaryType,
-              message: typedDataPayload.message,
+              types: normalizedPayload.types,
+              primaryType: normalizedPayload.primaryType,
+              message: normalizedPayload.message,
               signature: customSignature,
             })
             setIsValidTypedDataSignature(isValid)
