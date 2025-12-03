@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +17,7 @@ import { Wifi, WifiOff, Settings } from 'lucide-react'
 import { CONNECTION_METHODS, ConnectionMethod, connectionManager } from '@/lib/connection-methods'
 import { useAccount, useDisconnect } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { usePrivy, useWallets } from '@privy-io/react-auth'
 
 interface ConnectionSelectorProps {
   onMethodChange?: (method: ConnectionMethod) => void
@@ -31,13 +32,44 @@ export function ConnectionSelector({ onMethodChange }: ConnectionSelectorProps) 
   
   const { isConnected: isRainbowkitConnected, address: rainbowkitAddress } = useAccount()
   const { disconnect: disconnectRainbowkit } = useDisconnect()
+  const { ready: isPrivyReady, authenticated: isPrivyAuthenticated, login: privyLogin, logout: privyLogout } = usePrivy()
+  const { wallets: privyWallets } = useWallets()
+  const privyWalletsRef = useRef(privyWallets)
+
+  useEffect(() => {
+    privyWalletsRef.current = privyWallets
+  }, [privyWallets])
+
+  const waitForPrivyProvider = useCallback(async () => {
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+    for (let attempt = 0; attempt < 15; attempt++) {
+      const externalWallet = privyWalletsRef.current.find(
+        (wallet: any) =>
+          !wallet.walletClientType?.includes('privy') &&
+          (wallet.walletClientType === 'injected' ||
+            wallet.connectorType === 'injected' ||
+            wallet.connectorType === 'wallet_connect')
+      )
+      const targetWallet = externalWallet
+
+      const provider = await targetWallet?.getEthereumProvider?.()
+      if (provider) return provider
+      await sleep(500)
+    }
+    return null
+  }, [privyWallets])
 
   // Update available methods on client side
   useEffect(() => {
+    connectionManager.loadStoredMethod()
+    setSelectedMethod(connectionManager.getCurrentMethod())
+
     const updateAvailability = () => {
       const updated = CONNECTION_METHODS.map(method => ({
         ...method,
         available: method.id === 'rainbowkit' ? true : 
+          method.id === 'privy' ? isPrivyReady :
           method.id === 'window.ethereum' ? !!(window as any).ethereum :
           method.id === 'window.frw' ? !!(window as any).frw :
           method.id === 'window.metamask' ? !!(window as any).metamask :
@@ -53,7 +85,7 @@ export function ConnectionSelector({ onMethodChange }: ConnectionSelectorProps) 
     // Listen for wallet installations
     const interval = setInterval(updateAvailability, 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [isPrivyReady])
 
   // Listen for external connection method changes
   useEffect(() => {
@@ -93,6 +125,20 @@ export function ConnectionSelector({ onMethodChange }: ConnectionSelectorProps) 
     setError(null)
 
     try {
+      if (selectedMethod === 'privy') {
+        if (!isPrivyReady) {
+          throw new Error('Privy is not ready yet')
+        }
+        if (!isPrivyAuthenticated) {
+          await privyLogin()
+        }
+        const provider = await waitForPrivyProvider()
+        if (!provider) {
+          throw new Error('No external wallet provider available via Privy (e.g., MetaMask)')
+        }
+        connectionManager.setPrivyProvider(provider)
+      }
+
       const accounts = await connectionManager.connectWithMethod(selectedMethod)
       setConnectedAccounts(accounts)
     } catch (err: any) {
@@ -106,6 +152,10 @@ export function ConnectionSelector({ onMethodChange }: ConnectionSelectorProps) 
   const handleDisconnect = () => {
     if (selectedMethod === 'rainbowkit') {
       disconnectRainbowkit()
+    } else if (selectedMethod === 'privy') {
+      connectionManager.disconnect()
+      setConnectedAccounts([])
+      privyLogout()
     } else {
       connectionManager.disconnect()
       setConnectedAccounts([])
@@ -118,6 +168,12 @@ export function ConnectionSelector({ onMethodChange }: ConnectionSelectorProps) 
       return {
         connected: isRainbowkitConnected,
         accounts: rainbowkitAddress ? [rainbowkitAddress] : []
+      }
+    } else if (selectedMethod === 'privy') {
+      const account = connectionManager.getConnectedAccount()
+      return {
+        connected: !!account,
+        accounts: account ? [account] : []
       }
     } else {
       return {

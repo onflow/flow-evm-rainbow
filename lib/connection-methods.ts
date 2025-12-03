@@ -2,7 +2,17 @@ import { ethers } from 'ethers'
 import Web3 from 'web3'
 import { createWalletClient, custom, http } from 'viem'
 
-export type ConnectionMethod = 'rainbowkit' | 'window.ethereum' | 'window.frw' | 'window.metamask' | 'ethers' | 'web3' | 'viem' | 'wagmi' | 'eip6963'
+export type ConnectionMethod =
+  | 'rainbowkit'
+  | 'privy'
+  | 'window.ethereum'
+  | 'window.frw'
+  | 'window.metamask'
+  | 'ethers'
+  | 'web3'
+  | 'viem'
+  | 'wagmi'
+  | 'eip6963'
 
 export interface ConnectionMethodInfo {
   id: ConnectionMethod
@@ -19,6 +29,13 @@ export const CONNECTION_METHODS: ConnectionMethodInfo[] = [
     description: 'Default wallet connection with UI (Recommended)',
     icon: '🌈',
     available: true
+  },
+  {
+    id: 'privy',
+    name: 'Privy',
+    description: 'Embedded/authenticated wallet via Privy',
+    icon: '🛡️',
+    available: typeof window !== 'undefined'
   },
   {
     id: 'window.ethereum',
@@ -78,10 +95,25 @@ export const CONNECTION_METHODS: ConnectionMethodInfo[] = [
   }
 ]
 
+const STORAGE_KEY = 'connectionMethod'
+const VALID_METHODS: ConnectionMethod[] = [
+  'rainbowkit',
+  'privy',
+  'window.ethereum',
+  'window.frw',
+  'window.metamask',
+  'ethers',
+  'web3',
+  'viem',
+  'wagmi',
+  'eip6963',
+]
+
 export class ConnectionManager {
   private currentMethod: ConnectionMethod = 'rainbowkit'
   private connectedAccount: string | null = null
   private provider: any = null
+  private privyProvider: any = null
   private listeners: Set<() => void> = new Set()
 
   getCurrentMethod(): ConnectionMethod {
@@ -90,7 +122,23 @@ export class ConnectionManager {
 
   setCurrentMethod(method: ConnectionMethod) {
     this.currentMethod = method
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STORAGE_KEY, method)
+    }
     this.notifyListeners()
+  }
+
+  loadStoredMethod() {
+    if (typeof window === 'undefined') return
+    const stored = window.localStorage.getItem(STORAGE_KEY) as ConnectionMethod | null
+    if (stored && VALID_METHODS.includes(stored) && stored !== this.currentMethod) {
+      this.currentMethod = stored
+      this.notifyListeners()
+    }
+  }
+
+  setPrivyProvider(provider: any) {
+    this.privyProvider = provider
   }
 
   addListener(callback: () => void) {
@@ -115,6 +163,8 @@ export class ConnectionManager {
           return await this.connectWindowFrw()
         case 'window.metamask':
           return await this.connectWindowMetamask()
+        case 'privy':
+          return await this.connectPrivy()
         case 'ethers':
           return await this.connectEthers()
         case 'web3':
@@ -174,6 +224,20 @@ export class ConnectionManager {
     })
     
     this.provider = metamask
+    this.connectedAccount = accounts[0]
+    return accounts
+  }
+
+  private async connectPrivy(): Promise<string[]> {
+    if (!this.privyProvider) {
+      throw new Error('Privy provider not set. Please log in via Privy first.')
+    }
+
+    const accounts = await this.privyProvider.request({
+      method: 'eth_requestAccounts'
+    })
+
+    this.provider = this.privyProvider
     this.connectedAccount = accounts[0]
     return accounts
   }
@@ -255,6 +319,7 @@ export class ConnectionManager {
       case 'window.ethereum':
       case 'window.frw':
       case 'window.metamask':
+      case 'privy':
       case 'eip6963':
         return await this.provider.request({ method, params })
         
@@ -305,6 +370,7 @@ export class ConnectionManager {
   disconnect() {
     this.provider = null
     this.connectedAccount = null
+    this.privyProvider = null
   }
 }
 

@@ -20,7 +20,7 @@ import {
 } from "@rainbow-me/rainbowkit/wallets";
 import { Wallet, getWalletConnectConnector } from "@rainbow-me/rainbowkit";
 
-const projectId = "39d7c0c723726953bc312950113463b4";
+const projectId = process.env.WALLET_CONNECT_PROJECT_ID;
 
 export interface MyWalletOptions {
   projectId: string;

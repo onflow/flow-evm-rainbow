@@ -51,6 +51,30 @@ export const RPC_METHODS: RPCMethod[] = [
     exampleParams: []
   },
   {
+    id: 'wallet_requestPermissions',
+    name: 'Request Permissions',
+    method: 'wallet_requestPermissions',
+    description: 'Ask the wallet to grant specific permissions (e.g., account access)',
+    category: 'wallet',
+    walletTypes: ['EOA', 'Smart Contract'],
+    metamaskDoc: 'https://docs.metamask.io/wallet/reference/wallet_requestpermissions/',
+    exampleParams: [
+      {
+        "eth_accounts": {}
+      }
+    ]
+  },
+  {
+    id: 'wallet_getPermissions',
+    name: 'Get Permissions',
+    method: 'wallet_getPermissions',
+    description: 'List permissions previously granted to this site',
+    category: 'wallet',
+    walletTypes: ['EOA', 'Smart Contract'],
+    metamaskDoc: 'https://docs.metamask.io/wallet/reference/wallet_getpermissions/',
+    exampleParams: []
+  },
+  {
     id: 'eth_coinbase',
     name: 'Get Coinbase',
     method: 'eth_coinbase',
