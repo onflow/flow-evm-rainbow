@@ -24,7 +24,6 @@ const privyConfig = {
 
 if (typeof window !== "undefined") { 
   window.addEventListener("message", d => {
-    // console.log("Harness Message Received", d)
     const payload = (d as any)?.data
     const target = payload?.target
     const name = payload?.name
