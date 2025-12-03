@@ -50,7 +50,7 @@ export function UniversalConnectButton() {
       await sleep(500)
     }
     return null
-  }, [privyWallets])
+  }, [])
 
   // Listen for connection method changes
   useEffect(() => {

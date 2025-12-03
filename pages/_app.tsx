@@ -1,3 +1,4 @@
+import '../lib/ssr-shims';
 import '../styles/globals.css';
 import '@rainbow-me/rainbowkit/styles.css';
 import type { AppProps } from 'next/app';
@@ -7,17 +8,17 @@ import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { flowMainnet } from '@wagmi/core/chains'
 import {NextUIProvider} from "@nextui-org/react";
-import { PrivyProvider } from '@privy-io/react-auth';
+import { PrivyProvider, type PrivyClientConfig } from '@privy-io/react-auth';
 
 const client = new QueryClient();
 const DEFAULT_CHAIN_ID = Number(process.env.NEXT_PUBLIC_DEFAULT_CHAIN_ID ?? flowMainnet.id);
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
-const privyConfig = {
+const privyConfig: PrivyClientConfig = {
   loginMethods: ['wallet'],
-  walletConnectCloudProjectId: process.env.WALLET_CONNECT_PROJECT_ID,
+  walletConnectCloudProjectId: process.env.WALLET_CONNECT_PROJECT_ID ?? '',
   embeddedWallets: {
     ethereum: {
-      createOnLogin: 'never',
+      createOnLogin: 'off',
     },
   },
 };

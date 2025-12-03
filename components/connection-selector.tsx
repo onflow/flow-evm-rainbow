@@ -58,7 +58,7 @@ export function ConnectionSelector({ onMethodChange }: ConnectionSelectorProps) 
       await sleep(500)
     }
     return null
-  }, [privyWallets])
+  }, [])
 
   // Update available methods on client side
   useEffect(() => {
