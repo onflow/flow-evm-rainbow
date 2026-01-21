@@ -147,7 +147,7 @@ export function EIP6963Detector() {
                       onClick={() => handleConnect(provider.info.uuid)}
                       disabled={isConnecting === provider.info.uuid || connectedProvider !== null}
                       size="sm"
-                      data-testid={`connect-button-${provider.info.uuid}`}
+                      data-testid={`connect-button-${provider.info.name.replace(/ /g, '-')}`}
                     >
                       {isConnecting === provider.info.uuid ? 'Connecting...' : 'Connect'}
                     </Button>
