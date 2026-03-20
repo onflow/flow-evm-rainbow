@@ -59,7 +59,6 @@ if (typeof window !== "undefined") {
       msg.includes("already initialized")
     ) {
       event.preventDefault();
-      console.debug("[WC suppressed]", msg);
     }
   });
 }
