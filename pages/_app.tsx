@@ -15,7 +15,7 @@ const DEFAULT_CHAIN_ID = Number(process.env.NEXT_PUBLIC_DEFAULT_CHAIN_ID ?? flow
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 const privyConfig: PrivyClientConfig = {
   loginMethods: ['wallet'],
-  walletConnectCloudProjectId: process.env.WALLET_CONNECT_PROJECT_ID ?? '',
+  // WalletConnect is handled by RainbowKit — don't let Privy create a second WC Core
   embeddedWallets: {
     ethereum: {
       createOnLogin: 'off',
@@ -45,6 +45,23 @@ if (typeof window !== "undefined") {
   } catch {
     // localStorage not available
   }
+
+  // Suppress non-fatal WalletConnect SDK errors caused by multiple Core
+  // instances (React StrictMode double-render, multiple WC wallet connectors).
+  // These "No matching key" errors are noise — they don't break functionality.
+  window.addEventListener("unhandledrejection", (event) => {
+    const msg = event.reason?.message || String(event.reason || "");
+    if (
+      msg.includes("No matching key") ||
+      msg.includes("Pending session not found") ||
+      msg.includes("session topic doesn't exist") ||
+      msg.includes("Missing or invalid") ||
+      msg.includes("already initialized")
+    ) {
+      event.preventDefault();
+      console.debug("[WC suppressed]", msg);
+    }
+  });
 }
 
 if (typeof window !== "undefined") {
