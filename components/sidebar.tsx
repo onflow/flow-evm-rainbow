@@ -20,6 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { RPC_METHODS, CATEGORIES } from '@/lib/rpc-methods'
 import { cn } from '@/lib/utils'
+import { WCSessionsPanel } from './wc-sessions-panel'
 
 const iconMap = {
   Wallet,
@@ -126,6 +127,10 @@ export function Sidebar({ onClose }: SidebarProps) {
         </div>
       </ScrollArea>
       
+      <div className="border-t p-3">
+        <WCSessionsPanel />
+      </div>
+
       <div className="p-4 border-t">
         <Link href="/">
           <Button variant="outline" className="w-full" onClick={() => onClose?.()}>
