@@ -23,7 +23,31 @@ const privyConfig: PrivyClientConfig = {
   },
 };
 
-if (typeof window !== "undefined") { 
+// Clear stale WalletConnect sessions after SDK upgrade to prevent
+// "No matching key" and "Pending session not found" errors
+const WC_VERSION_KEY = "wc_sdk_version";
+const WC_CURRENT_VERSION = "2.19.5"; // bump this on future upgrades
+if (typeof window !== "undefined") {
+  try {
+    const storedVersion = localStorage.getItem(WC_VERSION_KEY);
+    if (storedVersion !== WC_CURRENT_VERSION) {
+      Object.keys(localStorage)
+        .filter(
+          (key) =>
+            key.startsWith("wc@2:") ||
+            key.startsWith("walletconnect") ||
+            key.startsWith("WALLETCONNECT") ||
+            key.startsWith("-walletlink")
+        )
+        .forEach((key) => localStorage.removeItem(key));
+      localStorage.setItem(WC_VERSION_KEY, WC_CURRENT_VERSION);
+    }
+  } catch {
+    // localStorage not available
+  }
+}
+
+if (typeof window !== "undefined") {
   window.addEventListener("message", d => {
     const payload = (d as any)?.data
     const target = payload?.target
