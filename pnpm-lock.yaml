@@ -17,6 +17,9 @@ importers:
       '@nextui-org/react':
         specifier: ^2.3.5
         version: 2.6.11(@types/react@19.2.2)(framer-motion@11.18.2(@emotion/is-prop-valid@1.4.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwindcss@3.4.19)
+      '@outblock/flow-dev-wallet-sdk':
+        specifier: ^0.1.2
+        version: 0.1.2(wagmi@2.19.5(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react@19.2.2)(bufferutil@4.1.0)(react@18.3.1)(typescript@5.4.2)(utf-8-validate@5.0.10)(viem@2.47.5(bufferutil@4.1.0)(typescript@5.4.2)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76))
       '@privy-io/react-auth':
         specifier: ^3.8.1
         version: 3.11.0(@solana-program/system@0.10.0(@solana/kit@5.4.0(bufferutil@4.1.0)(typescript@5.4.2)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.4.0(bufferutil@4.1.0)(typescript@5.4.2)(utf-8-validate@5.0.10)))(@solana/kit@5.4.0(bufferutil@4.1.0)(typescript@5.4.2)(utf-8-validate@5.0.10))(@solana/sysvars@5.4.0(typescript@5.4.2))(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react@19.2.2)(bufferutil@4.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.2)(use-sync-external-store@1.4.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -1146,6 +1149,14 @@ packages:
   '@nolyfill/is-core-module@1.0.39':
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
+
+  '@outblock/flow-dev-wallet-sdk@0.1.2':
+    resolution: {integrity: sha512-y/7J5Usjisz5IcvFxpBWp0sP1bKv6VxAfAMm0XoSahTmCXVLp5HIjbYj1PrimK8Wzs69BFuUlKad/wvLrSqtRA==}
+    peerDependencies:
+      wagmi: latest
+    peerDependenciesMeta:
+      wagmi:
+        optional: true
 
   '@paulmillr/qr@0.2.1':
     resolution: {integrity: sha512-IHnV6A+zxU7XwmKFinmYjUcwlyK9+xkG3/s9KcQhI9BjQKycrJ1JRO+FbNYPwZiPKW3je/DR0k7w8/gLa5eaxQ==}
@@ -7762,6 +7773,10 @@ snapshots:
       fastq: 1.20.1
 
   '@nolyfill/is-core-module@1.0.39': {}
+
+  '@outblock/flow-dev-wallet-sdk@0.1.2(wagmi@2.19.5(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react@19.2.2)(bufferutil@4.1.0)(react@18.3.1)(typescript@5.4.2)(utf-8-validate@5.0.10)(viem@2.47.5(bufferutil@4.1.0)(typescript@5.4.2)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76))':
+    optionalDependencies:
+      wagmi: 2.19.5(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react@19.2.2)(bufferutil@4.1.0)(react@18.3.1)(typescript@5.4.2)(utf-8-validate@5.0.10)(viem@2.47.5(bufferutil@4.1.0)(typescript@5.4.2)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
 
   '@paulmillr/qr@0.2.1': {}
 
