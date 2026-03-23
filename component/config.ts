@@ -96,7 +96,7 @@ const connectors = connectorsForWallets(
     {
       groupName: "Recommended",
       wallets: [
-        flowIndexWallet({ walletUrl: "http://localhost:5174/connect/popup" }),
+        flowIndexWallet({ walletUrl: "http://localhost:3003/connect/popup" }),
         flowWallet,
         trustWallet,
         walletConnectWallet,

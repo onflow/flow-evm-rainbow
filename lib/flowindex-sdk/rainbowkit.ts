@@ -34,13 +34,13 @@ export interface FlowIndexWalletOptions {
 export function flowIndexWallet(
   options: FlowIndexWalletOptions = {},
 ) {
-  const walletUrl = options.walletUrl ?? "https://wallet.flowindex.io/connect/popup"
+  const walletUrl = options.walletUrl ?? "http://localhost:3003/connect/popup"
 
   // Return a CreateWalletFn
   return function createWallet(_params: any) {
     return {
-      id: "flowindex-wallet",
-      name: "FlowIndex Wallet",
+      id: "flow-dev-wallet",
+      name: "Flow Dev Wallet",
       iconUrl: ICON_SVG,
       iconBackground: "#00EF8B",
       installed: true, // Always available (popup-based)
@@ -59,9 +59,9 @@ function createFlowIndexConnector(config: FlowIndexProviderConfig, walletDetails
     let connected = false
 
     return {
-      id: "flowindex-wallet",
-      name: "FlowIndex Wallet",
-      type: "flowindex" as const,
+      id: "flow-dev-wallet",
+      name: "Flow Dev Wallet",
+      type: "flow-dev-wallet" as const,
       ...walletDetails,
 
       async setup() {},
