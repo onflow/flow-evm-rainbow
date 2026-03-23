@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
-import { useAccount, useSignMessage, useBalance, useChainId, useSendTransaction, usePublicClient, useSignTypedData } from 'wagmi'
+import { useAccount, useSignMessage, useBalance, useChainId, useSendTransaction, usePublicClient, useSignTypedData, useConnectorClient } from 'wagmi'
 import { getBytecode, verifyTypedData } from '@wagmi/core'
 import { config, supportedChains } from '@/component/config'
 import { MethodPage } from '@/components/method-page'
@@ -114,13 +114,14 @@ export default function DynamicMethodPage() {
   const [isValidTypedDataSignature, setIsValidTypedDataSignature] = useState<boolean | null>(null)
   const [lastTypedDataInfo, setLastTypedDataInfo] = useState<any>(null)
 
-  const { address } = useAccount()
+  const { address, connector } = useAccount()
   const { signMessageAsync } = useSignMessage()
   const { signTypedDataAsync } = useSignTypedData()
   const publicClient = usePublicClient()
   const { sendTransactionAsync } = useSendTransaction()
   const { data: balance } = useBalance({ address })
   const currentChainId = useChainId()
+  const { data: connectorClient } = useConnectorClient()
 
   // Check if connected account is a smart contract
   useEffect(() => {
@@ -212,9 +213,13 @@ export default function DynamicMethodPage() {
       }
     }
 
-    const ethereum = (window as any).ethereum
-    if (!ethereum && currentMethod === 'rainbowkit') {
-      throw new Error('No Ethereum provider found')
+    // Use wagmi connector's provider when connected via RainbowKit (supports Flow Dev Wallet popup)
+    // Falls back to window.ethereum for direct provider methods
+    const ethereum = (currentMethod === 'rainbowkit' && connector)
+      ? await connector.getProvider()
+      : (window as any).ethereum
+    if (!ethereum) {
+      throw new Error('No Ethereum provider found. Connect a wallet first.')
     }
 
     // Handle different method types
