@@ -19,7 +19,7 @@ import {
   injectedWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { Wallet, getWalletConnectConnector } from "@rainbow-me/rainbowkit";
-import { flowIndexWallet } from "../lib/flowindex-sdk/rainbowkit";
+import { flowDevWallet } from "@outblock/flow-dev-wallet-sdk/rainbowkit";
 
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ?? "";
 
@@ -96,7 +96,7 @@ const connectors = connectorsForWallets(
     {
       groupName: "Recommended",
       wallets: [
-        flowIndexWallet({ walletUrl: "http://localhost:3003/connect/popup" }),
+        flowDevWallet(),
         flowWallet,
         trustWallet,
         walletConnectWallet,
